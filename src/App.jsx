@@ -10,7 +10,6 @@ const APPS = [
     market: "Global / Developers",
     url: "usetally.dev",
     color: "#00D4AA",
-    accent: "#00FF99",
     category: "Developer Infrastructure",
   },
   {
@@ -22,7 +21,6 @@ const APPS = [
     market: "Nigeria · Abuja",
     url: "atlas.app",
     color: "#FF6B35",
-    accent: "#FFB347",
     category: "Logistics / AI",
   },
   {
@@ -34,7 +32,6 @@ const APPS = [
     market: "UK · London",
     url: "atlas.app",
     color: "#FF8C42",
-    accent: "#FFCC80",
     category: "Logistics / AI",
   },
   {
@@ -46,7 +43,6 @@ const APPS = [
     market: "Nigeria",
     url: "joinzeno.co.uk",
     color: "#6C63FF",
-    accent: "#A78BFA",
     category: "Fintech / AI",
   },
   {
@@ -58,7 +54,6 @@ const APPS = [
     market: "Global / Families",
     url: "chorequestv2.vercel.app",
     color: "#F59E0B",
-    accent: "#FDE68A",
     category: "Productivity / Family",
   },
   {
@@ -69,6 +64,8 @@ const APPS = [
     stage: "Live",
     market: "Global / Freelancers",
     url: "ledgrapp.co.uk",
+    color: "#10B981",
+    category: "Fintech / Productivity",
   },
   {
     id: "afriilink",
@@ -78,7 +75,7 @@ const APPS = [
     stage: "Live",
     market: "Africa / Creators",
     url: "afriilink.com",
-    accent: "#F9A8D4",
+    color: "#E84393",
     category: "Creator Tools",
   },
 ];
@@ -128,58 +125,45 @@ function StatusBadge({ stage }) {
   );
 }
 
-function AppCard({ app, selected, onClick }) {
+function StepIndicator({ current, total }) {
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left p-4 rounded-xl border transition-all duration-200 group ${
-        selected
-          ? "border-white/30 bg-white/10 scale-[1.02]"
-          : "border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/20"
-      }`}
-    >
-      <div className="flex items-start justify-between mb-2">
+    <div className="flex items-center gap-1.5 mb-6">
+      {Array.from({ length: total }).map((_, i) => (
         <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-black"
-          style={{ backgroundColor: app.color }}
-        >
-          {app.name[0]}
-        </div>
-        <StatusBadge stage={app.stage} />
-      </div>
-      <div className="font-semibold text-white text-sm mt-2">{app.name}</div>
-      <div className="text-xs text-white/50 mt-0.5">{app.tagline}</div>
-      <div className="text-xs text-white/30 mt-2 font-mono">{app.market}</div>
-    </button>
+          key={i}
+          className={`h-1 rounded-full transition-all duration-300 ${
+            i < current ? "bg-white w-6" : i === current ? "bg-white/70 w-4" : "bg-white/20 w-2"
+          }`}
+        />
+      ))}
+    </div>
   );
 }
 
 function GeneratedContent({ content, platform }) {
   const [copied, setCopied] = useState(false);
-
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
   return (
-    <div className="mt-4 rounded-xl border border-white/10 bg-white/5 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5">
+    <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
         <span className="text-xs text-white/50 font-mono">
           {PLATFORM_CONFIG[platform]?.label} · {content.length} chars
         </span>
         <button
           onClick={handleCopy}
-          className="text-xs px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all"
+          className={`text-xs px-4 py-1.5 rounded-lg font-medium transition-all ${
+            copied ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 hover:bg-white/20 text-white/70 hover:text-white"
+          }`}
         >
           {copied ? "✓ Copied!" : "Copy"}
         </button>
       </div>
       <div className="p-4">
-        <pre className="text-sm text-white/80 whitespace-pre-wrap font-sans leading-relaxed">
-          {content}
-        </pre>
+        <pre className="text-sm text-white/80 whitespace-pre-wrap font-sans leading-relaxed">{content}</pre>
       </div>
     </div>
   );
@@ -193,10 +177,10 @@ export default function MarketingHub() {
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(null);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("generate"); // "generate" | "dashboard"
+  const [activeTab, setActiveTab] = useState("generate");
+  const [mobileStep, setMobileStep] = useState(0);
 
   const handleGenerate = async () => {
-    if (!selectedApp) return;
     setLoading(true);
     setGenerated(null);
     setError(null);
@@ -239,12 +223,8 @@ Write only the post content — no preamble, no explanation.`;
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: systemPrompt,
-          prompt: userPrompt,
-        }),
+        body: JSON.stringify({ system: systemPrompt, prompt: userPrompt }),
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "API error");
       const text = data.text || "";
@@ -257,6 +237,13 @@ Write only the post content — no preamble, no explanation.`;
     }
   };
 
+  const handleMobileNext = () => {
+    if (mobileStep === 2) handleGenerate();
+    setMobileStep((s) => Math.min(s + 1, 3));
+  };
+
+  const canProceed = () => mobileStep === 0 ? !!selectedApp : true;
+
   return (
     <div
       className="min-h-screen text-white"
@@ -265,78 +252,75 @@ Write only the post content — no preamble, no explanation.`;
         fontFamily: "'Georgia', serif",
       }}
     >
-      {/* Grain overlay */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-30"
+        className="fixed inset-0 pointer-events-none opacity-20"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E")`,
         }}
       />
 
-      <div className="relative max-w-6xl mx-auto px-6 py-10">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-xs font-bold">
+        <div className="mb-6 sm:mb-10">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-600 flex items-center justify-center text-xs font-bold">
               36
             </div>
-            <span className="text-white/40 text-sm font-mono tracking-widest uppercase">The 36th Company</span>
+            <span className="text-white/40 text-xs font-mono tracking-widest uppercase">The 36th Company</span>
           </div>
-          <h1 className="text-4xl font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
             Marketing Hub
           </h1>
-          <p className="text-white/40 text-sm mt-1">
-            AI-generated content for your product portfolio · X, LinkedIn & Threads
-          </p>
+          <p className="text-white/40 text-xs mt-1">AI-generated content · X, LinkedIn & Threads</p>
         </div>
 
-        {/* Tab switcher */}
-        <div className="flex gap-1 mb-8 bg-white/5 p-1 rounded-xl w-fit border border-white/10">
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 sm:mb-8 bg-white/5 p-1 rounded-xl w-full sm:w-fit border border-white/10">
           {["generate", "dashboard"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2 rounded-lg text-sm transition-all capitalize ${
-                activeTab === tab
-                  ? "bg-white text-black font-semibold"
-                  : "text-white/50 hover:text-white"
+              className={`flex-1 sm:flex-none px-4 sm:px-5 py-2.5 sm:py-2 rounded-lg text-sm transition-all capitalize ${
+                activeTab === tab ? "bg-white text-black font-semibold" : "text-white/50"
               }`}
             >
-              {tab === "generate" ? "✦ Generate Content" : "◈ Dashboard"}
+              {tab === "generate" ? "✦ Generate" : "◈ Dashboard"}
             </button>
           ))}
         </div>
 
+        {/* ── DASHBOARD ── */}
         {activeTab === "dashboard" && (
           <div>
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-3 mb-6">
               {[
                 { label: "Products", value: "7" },
                 { label: "Markets", value: "NG + UK" },
-                { label: "Twitter Handle", value: "@mcdavies4" },
+                { label: "Handle", value: "@zubidavies" },
                 { label: "Company", value: "The 36th Co." },
               ].map((stat) => (
-                <div key={stat.label} className="p-5 rounded-xl border border-white/10 bg-white/5">
-                  <div className="text-2xl font-bold text-white">{stat.value}</div>
-                  <div className="text-xs text-white/40 mt-1">{stat.label}</div>
+                <div key={stat.label} className="p-4 rounded-xl border border-white/10 bg-white/5">
+                  <div className="text-xl sm:text-2xl font-bold text-white">{stat.value}</div>
+                  <div className="text-xs text-white/40 mt-0.5">{stat.label}</div>
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {APPS.map((app) => (
                 <div
                   key={app.id}
-                  className="p-5 rounded-xl border border-white/10 bg-white/5"
+                  className="p-4 rounded-xl border border-white/10 bg-white/5"
                   style={{ borderLeftColor: app.color, borderLeftWidth: "3px" }}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-semibold text-white">{app.name}</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-semibold text-white text-sm">{app.name}</span>
                     <StatusBadge stage={app.stage} />
                   </div>
-                  <p className="text-xs text-white/50 leading-relaxed mb-3">{app.tagline}</p>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-white/50">{app.category}</span>
-                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-white/50">{app.market}</span>
+                  <p className="text-xs text-white/50 leading-relaxed mb-2">{app.tagline}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-white/40">{app.category}</span>
+                    <span className="text-xs bg-white/10 px-2 py-0.5 rounded-full text-white/40">{app.market}</span>
                   </div>
                 </div>
               ))}
@@ -344,140 +328,260 @@ Write only the post content — no preamble, no explanation.`;
           </div>
         )}
 
+        {/* ── GENERATE ── */}
         {activeTab === "generate" && (
-          <div className="grid grid-cols-3 gap-6">
-            {/* Left — App picker */}
-            <div>
-              <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">01 · Select App</p>
-              <div className="space-y-2">
-                {APPS.map((app) => (
-                  <AppCard
-                    key={app.id}
-                    app={app}
-                    selected={selectedApp === app.id}
-                    onClick={() => setSelectedApp(app.id)}
+          <>
+            {/* ── DESKTOP 3-col ── */}
+            <div className="hidden md:grid grid-cols-3 gap-6">
+              {/* Col 1 */}
+              <div>
+                <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">01 · Select App</p>
+                <div className="space-y-2">
+                  {APPS.map((app) => (
+                    <button
+                      key={app.id}
+                      onClick={() => setSelectedApp(app.id)}
+                      className={`w-full text-left p-4 rounded-xl border transition-all ${
+                        selectedApp === app.id ? "border-white/30 bg-white/10 scale-[1.02]" : "border-white/10 bg-white/5 hover:bg-white/8 hover:border-white/20"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-black" style={{ backgroundColor: app.color }}>
+                          {app.name[0]}
+                        </div>
+                        <StatusBadge stage={app.stage} />
+                      </div>
+                      <div className="font-semibold text-white text-sm mt-2">{app.name}</div>
+                      <div className="text-xs text-white/50 mt-0.5">{app.tagline}</div>
+                      <div className="text-xs text-white/30 mt-2 font-mono">{app.market}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Col 2 */}
+              <div>
+                <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">02 · Configure</p>
+                <div className="mb-5">
+                  <p className="text-xs text-white/40 mb-2">Platform</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {Object.entries(PLATFORM_CONFIG).map(([key, plt]) => (
+                      <button
+                        key={key}
+                        onClick={() => setPlatform(key)}
+                        className={`p-3 rounded-xl border text-left transition-all ${
+                          platform === key ? "border-white/40 bg-white/10" : "border-white/10 bg-white/5 hover:bg-white/8"
+                        }`}
+                      >
+                        <div className="text-lg mb-1">{plt.icon}</div>
+                        <div className="text-xs text-white/70">{plt.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-5">
+                  <p className="text-xs text-white/40 mb-2">Content Type</p>
+                  <div className="space-y-1.5">
+                    {CONTENT_TYPES.map((type) => (
+                      <button
+                        key={type.id}
+                        onClick={() => setContentType(type.id)}
+                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all ${
+                          contentType === type.id ? "bg-white/15 text-white border border-white/20" : "text-white/50 hover:text-white hover:bg-white/8 border border-transparent"
+                        }`}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-5">
+                  <p className="text-xs text-white/40 mb-2">Extra context (optional)</p>
+                  <textarea
+                    value={customContext}
+                    onChange={(e) => setCustomContext(e.target.value)}
+                    placeholder="e.g. We just hit 100 signups..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white/70 placeholder-white/20 resize-none focus:outline-none focus:border-white/30 leading-relaxed"
+                    rows={4}
                   />
-                ))}
-              </div>
-            </div>
-
-            {/* Middle — Config */}
-            <div>
-              <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">02 · Configure</p>
-
-              {/* Platform */}
-              <div className="mb-5">
-                <p className="text-xs text-white/40 mb-2">Platform</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {Object.entries(PLATFORM_CONFIG).map(([key, plt]) => (
-                    <button
-                      key={key}
-                      onClick={() => setPlatform(key)}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        platform === key
-                          ? "border-white/40 bg-white/10"
-                          : "border-white/10 bg-white/5 hover:bg-white/8"
-                      }`}
-                    >
-                      <div className="text-lg mb-1">{plt.icon}</div>
-                      <div className="text-xs text-white/70">{plt.label}</div>
-                    </button>
-                  ))}
                 </div>
+                <button
+                  onClick={handleGenerate}
+                  disabled={!selectedApp || loading}
+                  className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
+                    !selectedApp || loading ? "bg-white/10 text-white/30 cursor-not-allowed" : "bg-white text-black hover:bg-white/90 active:scale-95"
+                  }`}
+                >
+                  {loading ? <span className="flex items-center justify-center gap-2"><span className="animate-spin">◌</span> Generating...</span> : "✦ Generate Post"}
+                </button>
               </div>
-
-              {/* Content type */}
-              <div className="mb-5">
-                <p className="text-xs text-white/40 mb-2">Content Type</p>
-                <div className="space-y-1.5">
-                  {CONTENT_TYPES.map((type) => (
-                    <button
-                      key={type.id}
-                      onClick={() => setContentType(type.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all ${
-                        contentType === type.id
-                          ? "bg-white/15 text-white border border-white/20"
-                          : "text-white/50 hover:text-white hover:bg-white/8 border border-transparent"
-                      }`}
-                    >
-                      {type.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Extra context */}
-              <div className="mb-5">
-                <p className="text-xs text-white/40 mb-2">Extra context (optional)</p>
-                <textarea
-                  value={customContext}
-                  onChange={(e) => setCustomContext(e.target.value)}
-                  placeholder="e.g. We just hit 100 signups, launching on Product Hunt Tuesday..."
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white/70 placeholder-white/20 resize-none focus:outline-none focus:border-white/30 leading-relaxed"
-                  rows={4}
-                />
-              </div>
-
-              <button
-                onClick={handleGenerate}
-                disabled={!selectedApp || loading}
-                className={`w-full py-3 rounded-xl text-sm font-semibold transition-all ${
-                  !selectedApp || loading
-                    ? "bg-white/10 text-white/30 cursor-not-allowed"
-                    : "bg-white text-black hover:bg-white/90 active:scale-95"
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin">◌</span> Generating...
-                  </span>
-                ) : (
-                  "✦ Generate Post"
+              {/* Col 3 */}
+              <div>
+                <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">03 · Output</p>
+                {!generated && !loading && !error && (
+                  <div className="h-64 rounded-xl border border-dashed border-white/10 flex items-center justify-center">
+                    <p className="text-white/20 text-sm text-center">Select an app and hit<br />Generate Post</p>
+                  </div>
                 )}
-              </button>
+                {loading && (
+                  <div className="h-64 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-2xl animate-pulse mb-2">✦</div>
+                      <p className="text-white/30 text-xs">Writing your post...</p>
+                    </div>
+                  </div>
+                )}
+                {error && <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm">{error}</div>}
+                {generated && !loading && (
+                  <>
+                    <GeneratedContent content={generated} platform={platform} />
+                    <button onClick={handleGenerate} className="mt-3 w-full py-2 rounded-xl text-xs text-white/40 hover:text-white/70 border border-white/10 hover:border-white/20 transition-all">↻ Regenerate</button>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Right — Output */}
-            <div>
-              <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">03 · Output</p>
+            {/* ── MOBILE WIZARD ── */}
+            <div className="md:hidden">
+              <StepIndicator current={mobileStep} total={4} />
 
-              {!generated && !loading && !error && (
-                <div className="h-64 rounded-xl border border-dashed border-white/10 flex items-center justify-center">
-                  <p className="text-white/20 text-sm text-center">
-                    Select an app and hit<br />Generate Post
-                  </p>
-                </div>
-              )}
-
-              {loading && (
-                <div className="h-64 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-2xl animate-pulse mb-2">✦</div>
-                    <p className="text-white/30 text-xs">Writing your post...</p>
+              {/* Step 0 — App */}
+              {mobileStep === 0 && (
+                <div>
+                  <p className="text-lg font-semibold text-white mb-1">Which app?</p>
+                  <p className="text-xs text-white/40 mb-4">Select the product to create content for</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {APPS.map((app) => (
+                      <button
+                        key={app.id}
+                        onClick={() => setSelectedApp(app.id)}
+                        className={`text-left p-4 rounded-2xl border transition-all ${
+                          selectedApp === app.id ? "border-white/40 bg-white/10" : "border-white/10 bg-white/5"
+                        }`}
+                      >
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-black mb-3" style={{ backgroundColor: app.color }}>
+                          {app.name[0]}
+                        </div>
+                        <div className="font-semibold text-white text-sm">{app.name}</div>
+                        <div className="text-xs text-white/40 mt-0.5 leading-tight">{app.tagline}</div>
+                        <div className="mt-2"><StatusBadge stage={app.stage} /></div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
 
-              {error && (
-                <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm">
-                  {error}
+              {/* Step 1 — Platform */}
+              {mobileStep === 1 && (
+                <div>
+                  <p className="text-lg font-semibold text-white mb-1">Which platform?</p>
+                  <p className="text-xs text-white/40 mb-4">Each platform gets a tailored style</p>
+                  <div className="space-y-3">
+                    {Object.entries(PLATFORM_CONFIG).map(([key, plt]) => (
+                      <button
+                        key={key}
+                        onClick={() => setPlatform(key)}
+                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center gap-4 ${
+                          platform === key ? "border-white/40 bg-white/10" : "border-white/10 bg-white/5"
+                        }`}
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-2xl font-bold flex-shrink-0">{plt.icon}</div>
+                        <div>
+                          <div className="font-semibold text-white">{plt.label}</div>
+                          <div className="text-xs text-white/40 mt-0.5">{plt.format} · {plt.limit} chars</div>
+                        </div>
+                        {platform === key && <div className="ml-auto text-white/60 text-lg">✓</div>}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {generated && !loading && (
-                <GeneratedContent content={generated} platform={platform} />
+              {/* Step 2 — Type + Context */}
+              {mobileStep === 2 && (
+                <div>
+                  <p className="text-lg font-semibold text-white mb-1">What type of post?</p>
+                  <p className="text-xs text-white/40 mb-4">Choose the angle for your content</p>
+                  <div className="space-y-2 mb-5">
+                    {CONTENT_TYPES.map((type) => (
+                      <button
+                        key={type.id}
+                        onClick={() => setContentType(type.id)}
+                        className={`w-full text-left px-4 py-3.5 rounded-2xl border transition-all text-sm ${
+                          contentType === type.id ? "bg-white/15 text-white border-white/30" : "text-white/60 border-white/10 bg-white/5"
+                        }`}
+                      >
+                        {type.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-white/40 mb-2">Extra context (optional)</p>
+                  <textarea
+                    value={customContext}
+                    onChange={(e) => setCustomContext(e.target.value)}
+                    placeholder="e.g. We just hit 100 signups, launching on Product Hunt Tuesday..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-sm text-white/70 placeholder-white/20 resize-none focus:outline-none focus:border-white/30 leading-relaxed"
+                    rows={3}
+                  />
+                </div>
               )}
 
-              {generated && !loading && (
-                <button
-                  onClick={handleGenerate}
-                  className="mt-3 w-full py-2 rounded-xl text-xs text-white/40 hover:text-white/70 border border-white/10 hover:border-white/20 transition-all"
-                >
-                  ↻ Regenerate
-                </button>
+              {/* Step 3 — Output */}
+              {mobileStep === 3 && (
+                <div>
+                  <p className="text-lg font-semibold text-white mb-1">Your post</p>
+                  <p className="text-xs text-white/40 mb-4">
+                    {APPS.find((a) => a.id === selectedApp)?.name} · {PLATFORM_CONFIG[platform]?.label}
+                  </p>
+                  {loading && (
+                    <div className="h-48 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-3xl animate-pulse mb-3">✦</div>
+                        <p className="text-white/30 text-sm">Writing your post...</p>
+                      </div>
+                    </div>
+                  )}
+                  {error && <div className="p-4 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-sm mb-4">{error}</div>}
+                  {generated && !loading && (
+                    <>
+                      <GeneratedContent content={generated} platform={platform} />
+                      <button onClick={handleGenerate} className="mt-3 w-full py-3 rounded-2xl text-sm text-white/40 border border-white/10 transition-all active:scale-95">↻ Regenerate</button>
+                    </>
+                  )}
+                </div>
               )}
+
+              {/* Mobile nav */}
+              <div className="flex gap-3 mt-6">
+                {mobileStep > 0 && (
+                  <button
+                    onClick={() => setMobileStep((s) => s - 1)}
+                    className="flex-1 py-3.5 rounded-2xl border border-white/10 text-white/50 text-sm font-medium active:scale-95"
+                  >
+                    ← Back
+                  </button>
+                )}
+                {mobileStep < 3 && (
+                  <button
+                    onClick={handleMobileNext}
+                    disabled={!canProceed()}
+                    className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold transition-all active:scale-95 ${
+                      !canProceed() ? "bg-white/10 text-white/30 cursor-not-allowed" : "bg-white text-black"
+                    }`}
+                  >
+                    {mobileStep === 2 ? "✦ Generate" : "Next →"}
+                  </button>
+                )}
+                {mobileStep === 3 && !loading && (
+                  <button
+                    onClick={() => { setMobileStep(0); setSelectedApp(null); setGenerated(null); setError(null); }}
+                    className="flex-1 py-3.5 rounded-2xl bg-white text-black text-sm font-semibold active:scale-95"
+                  >
+                    + New Post
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>
