@@ -98,6 +98,13 @@ const PLATFORM_CONFIG = {
     style: "professional but conversational, founder story angle, insight-driven",
     format: "Long-form post",
   },
+  threads: {
+    label: "Threads",
+    icon: "@",
+    limit: 500,
+    style: "casual, conversational, authentic — like talking to your community. No hashtags. Short punchy paragraphs.",
+    format: "Single post or short thread",
+  },
 };
 
 const CONTENT_TYPES = [
@@ -221,6 +228,8 @@ ${customContext ? `EXTRA CONTEXT FROM FOUNDER: ${customContext}` : ""}
 ${
   platform === "twitter"
     ? `Format as a numbered thread. Start with a killer hook tweet (no number), then tweets 2-6 that build the story. End with a CTA tweet. Each tweet must be under 280 chars. Separate tweets with a blank line.`
+    : platform === "threads"
+    ? `Write a Threads post. Max 500 characters. Casual and authentic — like a founder talking directly to their community. No hashtags. Short punchy sentences. Can be a single post or 2-3 short connected thoughts separated by blank lines.`
     : `Write a LinkedIn post. Start with a compelling first line that stops the scroll. Use short paragraphs. Add 3-5 relevant hashtags at the end.`
 }
 
@@ -277,7 +286,7 @@ Write only the post content — no preamble, no explanation.`;
             Marketing Hub
           </h1>
           <p className="text-white/40 text-sm mt-1">
-            AI-generated content for your product portfolio · X & LinkedIn
+            AI-generated content for your product portfolio · X, LinkedIn & Threads
           </p>
         </div>
 
@@ -359,7 +368,7 @@ Write only the post content — no preamble, no explanation.`;
               {/* Platform */}
               <div className="mb-5">
                 <p className="text-xs text-white/40 mb-2">Platform</p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {Object.entries(PLATFORM_CONFIG).map(([key, plt]) => (
                     <button
                       key={key}
